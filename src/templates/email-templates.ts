@@ -137,7 +137,7 @@ export function generateExpirationEmail(data: ExpirationEmailData): string {
           <p style="margin: 0 0 16px 0; font-size: 15px; color: #4A4642;">
             Consultez le système pour plus de détails et gérer les renouvellements
           </p>
-          <a href="http://localhost:3000" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #E8765E 0%, #2D5A4F 100%); color: white; text-decoration: none; border-radius: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
+          <a href="${process.env.APP_URL || 'http://localhost:3000'}" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #E8765E 0%, #2D5A4F 100%); color: white; text-decoration: none; border-radius: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
             Ouvrir SubTrack
           </a>
         </div>
@@ -183,7 +183,7 @@ export function generateExpirationTextEmail(data: ExpirationEmailData): string {
   text += `TOTAUX:\n`;
   text += `Total Licences: ${data.totalLicences}\n`;
   text += `Total Puces: ${data.totalPuces}\n\n`;
-  text += `Consultez SubTrack pour plus de détails: http://localhost:3000\n`;
+  text += `Consultez SubTrack pour plus de détails: ${process.env.APP_URL || 'http://localhost:3000'}\n`;
 
   return text;
 }
