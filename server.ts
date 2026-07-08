@@ -53,45 +53,8 @@ async function startServer() {
   app.use(express.json());
 
   // --- Auth Routes (Public) ---
-
-  app.post("/api/auth/register", async (req, res) => {
-    try {
-      const { email, password } = req.body;
-
-      if (!email || !password) {
-        return res.status(400).json({ error: "Email and password are required" });
-      }
-
-      if (password.length < 6) {
-        return res.status(400).json({ error: "Password must be at least 6 characters" });
-      }
-
-      // Check if user already exists
-      const existingUser = await db.select().from(users).where(eq(users.email, email)).limit(1);
-      if (existingUser.length > 0) {
-        return res.status(400).json({ error: "User already exists" });
-      }
-
-      // Hash password and create user
-      const hashedPassword = await hashPassword(password);
-      const result = await db.insert(users).values({
-        email,
-        password: hashedPassword,
-        role: 'user', // Default role for new users
-      }).returning();
-
-      const user = result[0];
-      const token = generateToken(user.id, user.email, user.role);
-
-      res.json({
-        token,
-        user: { id: user.id, email: user.email, role: user.role }
-      });
-    } catch (e) {
-      console.error(e);
-      res.status(500).json({ error: "Could not register user" });
-    }
-  });
+  // Note: there is no public registration route. Accounts are created only by
+  // an admin via POST /api/admin/users.
 
   app.post("/api/auth/login", async (req, res) => {
     try {
@@ -131,7 +94,7 @@ async function startServer() {
 
   // Apply auth middleware to all /api routes except auth routes
   app.use('/api', (req, res, next) => {
-    if (req.path.startsWith('/auth/')) {
+    if (req.path.startsWith('/auth/') || req.path === '/cron/trigger-notifications') {
       return next();
     }
     requireAuth(req, res, next);
@@ -662,6 +625,30 @@ async function startServer() {
         error: "Failed to send email notification",
         details: error.message
       });
+    }
+  });
+
+  // External cron trigger endpoint (for hosts where the server sleeps and the
+  // in-process node-cron scheduler can't be relied on to fire at the right time).
+  // Protected by a static secret since external schedulers can't hold a login session.
+  app.post("/api/cron/trigger-notifications", async (req, res) => {
+    const providedSecret = req.headers['x-cron-secret'];
+    const expectedSecret = process.env.CRON_SECRET;
+
+    if (!expectedSecret) {
+      return res.status(500).json({ error: "CRON_SECRET is not configured on the server" });
+    }
+    if (providedSecret !== expectedSecret) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    try {
+      console.log('\n📧 Email notification triggered by external cron');
+      await sendExpirationNotificationEmail();
+      res.json({ success: true, message: "Email notification job executed" });
+    } catch (error: any) {
+      console.error('Error running external cron notification:', error);
+      res.status(500).json({ error: "Failed to send email notification", details: error.message });
     }
   });
 

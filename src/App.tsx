@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { Calendar as CalendarIcon, LogOut, Loader2, LayoutDashboard, Building2, Database, Sun, Moon, Users, Shield } from 'lucide-react';
 import { cn } from './lib/utils';
-import { login, register, signOut, getCurrentUser, User } from './auth';
+import { login, signOut, getCurrentUser, User } from './auth';
 import { useSubscriptions } from './hooks/useSubscriptions';
 
 import HomePage from './pages/HomePage';
@@ -123,7 +123,6 @@ function MainLayout({ children, user, isDark, setIsDark, onSignOut }: { children
 function App() {
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -162,13 +161,8 @@ function App() {
     setLoading(true);
 
     try {
-      if (isLogin) {
-        const result = await login(email, password);
-        setUser(result.user);
-      } else {
-        const result = await register(email, password);
-        setUser(result.user);
-      }
+      const result = await login(email, password);
+      setUser(result.user);
     } catch (err: any) {
       setError(err.message || 'Authentication failed');
     } finally {
@@ -222,7 +216,7 @@ function App() {
           </div>
 
           <p className="text-sm text-text-secondary leading-relaxed">
-            {isLogin ? 'Connectez-vous' : 'Créez un compte'} pour gérer vos entreprises et abonnements.
+            Connectez-vous pour gérer vos entreprises et abonnements.
           </p>
 
           {/* Form */}
@@ -252,7 +246,6 @@ function App() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-4 py-3 bg-background border-2 border-border rounded-lg text-text-primary placeholder:text-text-muted focus:outline-none focus:border-[var(--accent-primary)] transition-editorial font-mono text-sm"
                 required
-                minLength={6}
               />
             </div>
 
@@ -270,23 +263,10 @@ function App() {
               {loading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
-                isLogin ? 'Se connecter' : 'S\'inscrire'
+                'Se connecter'
               )}
             </button>
           </form>
-
-          {/* Toggle Auth Mode */}
-          <div className="pt-4 border-t border-border">
-            <button
-              onClick={() => {
-                setIsLogin(!isLogin);
-                setError('');
-              }}
-              className="text-sm text-text-muted hover:text-[var(--accent-primary)] transition-editorial font-mono"
-            >
-              {isLogin ? 'Pas de compte ? S\'inscrire' : 'Déjà un compte ? Se connecter'}
-            </button>
-          </div>
         </div>
       </div>
     );
