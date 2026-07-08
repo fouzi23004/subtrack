@@ -1,5 +1,4 @@
 // Authentication utilities for the frontend
-const API_URL = 'http://localhost:3000';
 
 export interface User {
   id: number;
@@ -13,7 +12,7 @@ export interface AuthResponse {
 }
 
 export const register = async (email: string, password: string): Promise<AuthResponse> => {
-  const response = await fetch(`${API_URL}/api/auth/register`, {
+  const response = await fetch('/api/auth/register', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
@@ -31,7 +30,7 @@ export const register = async (email: string, password: string): Promise<AuthRes
 };
 
 export const login = async (email: string, password: string): Promise<AuthResponse> => {
-  const response = await fetch(`${API_URL}/api/auth/login`, {
+  const response = await fetch('/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
