@@ -631,8 +631,8 @@ async function startServer() {
   // External cron trigger endpoint (for hosts where the server sleeps and the
   // in-process node-cron scheduler can't be relied on to fire at the right time).
   // Protected by a static secret since external schedulers can't hold a login session.
-  app.post("/api/cron/trigger-notifications", async (req, res) => {
-    const providedSecret = req.headers['x-cron-secret'];
+  const handleCronTrigger = async (req: express.Request, res: express.Response) => {
+    const providedSecret = req.headers['x-cron-secret'] || req.query.secret;
     const expectedSecret = process.env.CRON_SECRET;
 
     if (!expectedSecret) {
@@ -650,7 +650,9 @@ async function startServer() {
       console.error('Error running external cron notification:', error);
       res.status(500).json({ error: "Failed to send email notification", details: error.message });
     }
-  });
+  };
+  app.post("/api/cron/trigger-notifications", handleCronTrigger);
+  app.get("/api/cron/trigger-notifications", handleCronTrigger);
 
   // Start the email notification scheduler if enabled
   if (process.env.ENABLE_EMAIL_NOTIFICATIONS === 'true') {
