@@ -43,6 +43,13 @@
       "when": 1782905057411,
       "tag": "0005_nervous_mastermind",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1782905057412,
+      "tag": "0006_add_user_roles",
+      "breakpoints": true
     }
   ]
 }

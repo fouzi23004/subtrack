@@ -1,20 +1,9 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-import { Pool } from 'pg';
+import { createPool } from './src/db/index';
 
-console.log('Environment variables:');
-console.log('SQL_HOST:', process.env.SQL_HOST);
-console.log('SQL_USER:', process.env.SQL_USER);
-console.log('SQL_PASSWORD:', process.env.SQL_PASSWORD ? '***' : 'UNDEFINED');
-console.log('SQL_DB_NAME:', process.env.SQL_DB_NAME);
-
-const pool = new Pool({
-  host: process.env.SQL_HOST || 'localhost',
-  user: process.env.SQL_USER || 'subtrack_user',
-  password: process.env.SQL_PASSWORD || 'subtrack_password',
-  database: process.env.SQL_DB_NAME || 'subtrack',
-});
+const pool = createPool();
 
 async function test() {
   try {

@@ -1,18 +1,12 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
-import pkg from 'pg';
-const { Pool } = pkg;
 import * as dotenv from 'dotenv';
+import { createPool } from './src/db/index';
 
 dotenv.config();
 
 async function runMigrations() {
-  const pool = new Pool({
-    host: process.env.SQL_HOST || 'localhost',
-    user: process.env.SQL_USER || 'subtrack_user',
-    password: process.env.SQL_PASSWORD || 'subtrack_password',
-    database: process.env.SQL_DB_NAME || 'subtrack',
-  });
+  const pool = createPool();
 
   const db = drizzle(pool);
 

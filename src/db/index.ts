@@ -4,6 +4,15 @@ import * as schema from './schema';
 
 // Function to create a new connection pool.
 export const createPool = () => {
+  if (process.env.DATABASE_URL) {
+    console.log('Creating database pool from DATABASE_URL');
+    return new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: false },
+      connectionTimeoutMillis: 15000,
+    });
+  }
+
   const config = {
     host: process.env.SQL_HOST || 'localhost',
     user: process.env.SQL_USER || 'subtrack_user',

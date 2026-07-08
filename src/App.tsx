@@ -81,9 +81,7 @@ function MainLayout({ children, user, isDark, setIsDark, onSignOut }: { children
         <header className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pb-6 border-b-2 border-border">
           {/* Logo & Brand - Editorial Style */}
           <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 rounded-lg overflow-hidden shadow-editorial-lg">
-              <img src="/logo.png" alt="SubTrack" className="w-full h-full object-cover" />
-            </div>
+            <img src="/logo.png" alt="SubTrack" className="h-16 w-auto object-contain" />
             <div>
               <h1 className="editorial-heading text-2xl text-text-primary leading-tight">
                 SubTrack

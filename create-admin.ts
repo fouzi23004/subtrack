@@ -1,20 +1,14 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
-import pkg from 'pg';
-const { Pool } = pkg;
 import * as dotenv from 'dotenv';
 import { users } from './src/db/schema';
 import { hashPassword } from './src/lib/auth';
 import { eq } from 'drizzle-orm';
+import { createPool } from './src/db/index';
 
 dotenv.config();
 
 async function createAdmin() {
-  const pool = new Pool({
-    host: process.env.SQL_HOST || 'localhost',
-    user: process.env.SQL_USER || 'subtrack_user',
-    password: process.env.SQL_PASSWORD || 'subtrack_password',
-    database: process.env.SQL_DB_NAME || 'subtrack',
-  });
+  const pool = createPool();
 
   const db = drizzle(pool);
 
@@ -44,6 +38,7 @@ async function createAdmin() {
   const result = await db.insert(users).values({
     email: adminEmail,
     password: hashedPassword,
+    role: 'admin',
   }).returning();
 
   console.log('✅ Admin account created successfully!');
