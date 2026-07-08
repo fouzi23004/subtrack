@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: subtrack-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: subtrack_user
+      POSTGRES_PASSWORD: subtrack_password
+      POSTGRES_DB: subtrack
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U subtrack_user -d subtrack"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+    driver: local

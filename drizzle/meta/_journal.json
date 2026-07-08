@@ -1,0 +1,48 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1782740994680,
+      "tag": "0000_elite_wolverine",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1782817849753,
+      "tag": "0001_steep_bloodstrike",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1782821370383,
+      "tag": "0002_worthless_shotgun",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1782829735931,
+      "tag": "0003_bent_molecule_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1782830678811,
+      "tag": "0004_dazzling_blue_marvel",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1782905057411,
+      "tag": "0005_nervous_mastermind",
+      "breakpoints": true
+    }
+  ]
+}

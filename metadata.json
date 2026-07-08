@@ -1,0 +1,8 @@
+{
+  "name": "SubTrack",
+  "description": "Gestion des abonnements de devices clients (Licences et Puces)",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

@@ -1,0 +1,1 @@
+ALTER TABLE "subscriptions" ADD COLUMN "is_paid" integer DEFAULT 0 NOT NULL;
