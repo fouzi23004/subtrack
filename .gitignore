@@ -10,5 +10,8 @@ coverage/
 # Uploaded files
 uploads/
 
+# Machine-local agent/tooling state
+.serena/
+
 # Stray Windows artifacts
 nul
