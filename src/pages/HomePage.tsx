@@ -7,7 +7,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { format, startOfYear, endOfYear, eachMonthOfInterval, startOfDay, isBefore } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Calendar as CalendarIcon, PieChart as PieChartIcon, BarChart2, Bell, ChevronRight, Clock } from 'lucide-react';
-import { cn, getNextOccurrence } from '../lib/utils';
+import { cn } from '../lib/utils';
 
 export default function HomePage() {
   const { subscriptions } = useSubscriptions();
@@ -32,14 +32,16 @@ export default function HomePage() {
   const upcomingDates = useMemo(() => {
     const today = startOfDay(new Date());
     
-    const occurrences = filteredSubscriptions.map(s => {
-       const nextDate = getNextOccurrence(s, today);
-       return {
-         sub: s,
-         date: nextDate,
-         dateStr: format(nextDate, 'yyyy-MM-dd')
-       };
-    });
+    const occurrences = filteredSubscriptions
+      .map(s => {
+        const date = startOfDay(new Date(s.endDate));
+        return {
+          sub: s,
+          date,
+          dateStr: format(date, 'yyyy-MM-dd')
+        };
+      })
+      .filter(occ => !isBefore(occ.date, today));
       
     const grouped = occurrences.reduce((acc, occ) => {
        if (!acc[occ.dateStr]) acc[occ.dateStr] = [];

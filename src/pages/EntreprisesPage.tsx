@@ -4,7 +4,7 @@ import { useSubscriptions } from '../hooks/useSubscriptions';
 import { useRevendeurs } from '../hooks/useRevendeurs';
 import { Entreprise, Subscription, SubscriptionType } from '../types';
 import { Building2, Plus, Edit2, Trash2, Search, Calendar as CalendarIcon, Package, AlertCircle, RefreshCw, Upload, FileText, Download } from 'lucide-react';
-import { format } from 'date-fns';
+import { addMonths, addYears, format, startOfDay } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn, getNextOccurrence } from '../lib/utils';
 import { getAuthToken } from '../auth';
@@ -43,7 +43,8 @@ export default function EntreprisesPage() {
 
   const [isRenewModalOpen, setIsRenewModalOpen] = useState(false);
   const [subToRenew, setSubToRenew] = useState<Subscription | null>(null);
-  const [renewDate, setRenewDate] = useState('');
+  const [renewYears, setRenewYears] = useState(1);
+  const [renewMonths, setRenewMonths] = useState(0);
   const [renewQuantity, setRenewQuantity] = useState(1);
 
   const rneFileInputRef = useRef<HTMLInputElement>(null);
@@ -203,18 +204,24 @@ export default function EntreprisesPage() {
 
   const openRenewModal = (sub: Subscription) => {
     setSubToRenew(sub);
-    setRenewDate(format(new Date(), 'yyyy-MM-dd'));
+    setRenewYears(1);
+    setRenewMonths(0);
     setRenewQuantity(sub.quantity); // Initialize with current quantity
     setIsRenewModalOpen(true);
   };
 
+  const computedRenewDate = subToRenew
+    ? addMonths(addYears(startOfDay(new Date(subToRenew.endDate)), renewYears), renewMonths)
+    : null;
+
   const executeRenew = async () => {
-    if (subToRenew && renewDate && renewQuantity > 0) {
+    if (subToRenew && computedRenewDate && (renewYears > 0 || renewMonths > 0) && renewQuantity > 0) {
       try {
-        await renewSubscription(subToRenew.id, renewDate, renewQuantity);
+        await renewSubscription(subToRenew.id, format(computedRenewDate, 'yyyy-MM-dd'), renewQuantity);
         setIsRenewModalOpen(false);
         setSubToRenew(null);
-        setRenewDate('');
+        setRenewYears(1);
+        setRenewMonths(0);
         setRenewQuantity(1);
       } catch (error) {
         console.error('Error renewing subscription:', error);
@@ -1006,31 +1013,49 @@ export default function EntreprisesPage() {
                 </div>
                 <div>
                   <label className="block text-xs text-text-muted font-mono uppercase tracking-wider mb-2">
-                    Nouvelle date d'expiration
+                    Durée du renouvellement
                   </label>
-                  <input
-                    type="date"
-                    value={renewDate}
-                    onChange={e => setRenewDate(e.target.value)}
-                    className="w-full bg-background border-2 border-border rounded-lg px-4 py-3 text-sm text-text-primary focus:outline-none focus:border-[var(--accent-primary)] transition-editorial font-mono"
-                    placeholder="Date d'expiration future"
-                  />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <input
+                        type="number"
+                        min="0"
+                        value={renewYears}
+                        onChange={e => setRenewYears(Math.max(0, parseInt(e.target.value) || 0))}
+                        className="w-full bg-background border-2 border-border rounded-lg px-4 py-3 text-sm text-text-primary focus:outline-none focus:border-[var(--accent-primary)] transition-editorial font-mono"
+                      />
+                      <p className="text-xs text-text-muted mt-1 font-mono">Année{renewYears > 1 ? 's' : ''}</p>
+                    </div>
+                    <div>
+                      <input
+                        type="number"
+                        min="0"
+                        value={renewMonths}
+                        onChange={e => setRenewMonths(Math.max(0, parseInt(e.target.value) || 0))}
+                        className="w-full bg-background border-2 border-border rounded-lg px-4 py-3 text-sm text-text-primary focus:outline-none focus:border-[var(--accent-primary)] transition-editorial font-mono"
+                      />
+                      <p className="text-xs text-text-muted mt-1 font-mono">Mois</p>
+                    </div>
+                  </div>
                   <p className="text-xs text-text-muted mt-2 font-mono">
-                    Cette date sera la nouvelle date d'expiration de l'abonnement
+                    Expire le {format(startOfDay(new Date(subToRenew.endDate)), 'dd/MM/yyyy')}
+                    {computedRenewDate && (renewYears > 0 || renewMonths > 0) && (
+                      <> → nouvelle expiration le <span className="text-[var(--accent-primary)] font-semibold">{format(computedRenewDate, 'dd/MM/yyyy')}</span></>
+                    )}
                   </p>
                 </div>
               </div>
             </div>
             <div className="flex gap-3 justify-end">
               <button
-                onClick={() => { setIsRenewModalOpen(false); setSubToRenew(null); setRenewDate(''); setRenewQuantity(1); }}
+                onClick={() => { setIsRenewModalOpen(false); setSubToRenew(null); setRenewYears(1); setRenewMonths(0); setRenewQuantity(1); }}
                 className="px-4 py-2.5 rounded-lg text-xs font-mono font-semibold uppercase tracking-wider text-text-muted hover:text-text-primary hover:bg-surface-hover transition-editorial"
               >
                 Annuler
               </button>
               <button
                 onClick={executeRenew}
-                disabled={!renewDate || renewQuantity < 1}
+                disabled={(renewYears <= 0 && renewMonths <= 0) || renewQuantity < 1}
                 className="px-4 py-2.5 rounded-lg text-xs font-mono font-semibold uppercase tracking-wider bg-green-600 hover:bg-green-700 text-white hover:shadow-editorial-md transition-editorial disabled:opacity-50"
               >
                 Renouveler
