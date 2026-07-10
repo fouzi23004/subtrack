@@ -1,5 +1,11 @@
 export type SubscriptionType = 'licence' | 'licence_puce';
 
+export interface PucePlan {
+  id: string;
+  name: string;
+  createdAt?: string;
+}
+
 export interface Revendeur {
   id: string;
   userId: string;
@@ -30,6 +36,8 @@ export interface Subscription {
   type: SubscriptionType;
   quantity: number;
   endDate: string; // ISO format: YYYY-MM-DD
+  plan?: string | null; // puce plan name — only for 'licence_puce'
+  phoneNumbers?: string[] | null; // only for 'licence_puce'
   isActive: number; // 1 = active, 0 = expired/inactive
   isPaid: number; // 1 = paid, 0 = unpaid
 }

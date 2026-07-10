@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSubscriptions } from '../hooks/useSubscriptions';
-import { TodayPanel } from '../components/TodayPanel';
+import { MiniCalendarPanel } from '../components/MiniCalendarPanel';
 import { FilterState } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { format, startOfYear, endOfYear, eachMonthOfInterval, startOfDay, isBefore } from 'date-fns';
@@ -80,7 +80,7 @@ export default function HomePage() {
     return Object.entries(types).map(([name, value]) => ({ name: name === 'licence' ? 'Licence' : 'Puce orange', value }));
   }, [filteredSubscriptions]);
 
-  const COLORS = ['#E8765E', '#2D5A4F'];
+  const TYPE_COLORS: Record<string, string> = { 'Licence': '#2D5A4F', 'Puce orange': '#E8765E' };
 
   return (
     <div className="editorial-bg min-h-screen">
@@ -153,8 +153,8 @@ export default function HomePage() {
                              className={cn(
                                "inline-flex items-center justify-center w-9 h-9 rounded-full border-2 border-surface text-xs font-bold shadow-editorial-sm transition-editorial",
                                sub.type === 'licence'
-                                 ? 'bg-[var(--accent-primary)] text-white'
-                                 : 'bg-[var(--accent-secondary)] text-white'
+                                 ? 'bg-[var(--accent-secondary)] text-white'
+                                 : 'bg-[var(--accent-primary)] text-white'
                              )}
                            >
                              {sub.type === 'licence' ? 'L' : 'P'}
@@ -255,7 +255,7 @@ export default function HomePage() {
                       dataKey="value"
                     >
                       {distByType.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        <Cell key={`cell-${index}`} fill={TYPE_COLORS[entry.name] ?? '#E8765E'} />
                       ))}
                     </Pie>
                     <Tooltip
@@ -283,9 +283,9 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Right column: Today Panel */}
+        {/* Right column: Mini Calendar of Current Month */}
         <div className="lg:col-span-4 animate-slide-in-right delay-100">
-           <TodayPanel subscriptions={filteredSubscriptions} />
+           <MiniCalendarPanel subscriptions={filteredSubscriptions} />
         </div>
       </div>
     </div>

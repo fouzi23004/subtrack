@@ -107,7 +107,7 @@ export function DayView({ currentDate, subscriptions }: DayViewProps) {
                       ? "bg-blue-500/10 text-blue-400 border border-blue-500/20"
                       : "bg-orange-500/10 text-orange-400 border border-orange-500/20"
                   )}>
-                    {sub.type === 'licence' ? 'Licence' : 'Puce orange'}
+                    {sub.type === 'licence' ? 'Licence' : `Puce orange${sub.plan ? ` · ${sub.plan}` : ''}`}
                   </div>
                 </div>
 

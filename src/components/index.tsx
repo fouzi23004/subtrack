@@ -3,7 +3,7 @@ export { Button } from './Button';
 export { Card, CardHeader, CardTitle, CardContent } from './Card';
 export { Badge } from './Badge';
 export { Input, Textarea, Select } from './Input';
-export { TodayPanel } from './TodayPanel';
+export { MiniCalendarPanel } from './MiniCalendarPanel';
 
 // Calendar Components
 export { DayView } from './DayView';

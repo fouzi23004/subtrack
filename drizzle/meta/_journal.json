@@ -50,6 +50,13 @@
       "when": 1782905057412,
       "tag": "0006_add_user_roles",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1783679710128,
+      "tag": "0007_add_puce_plans_and_phones",
+      "breakpoints": true
     }
   ]
 }

@@ -2,8 +2,9 @@ import React, { useState, useMemo, useRef } from 'react';
 import { useEntreprises } from '../hooks/useEntreprises';
 import { useSubscriptions } from '../hooks/useSubscriptions';
 import { useRevendeurs } from '../hooks/useRevendeurs';
+import { usePucePlans } from '../hooks/usePucePlans';
 import { Entreprise, Subscription, SubscriptionType } from '../types';
-import { Building2, Plus, Edit2, Trash2, Search, Calendar as CalendarIcon, Package, AlertCircle, RefreshCw, Upload, FileText, Download } from 'lucide-react';
+import { Building2, Plus, Edit2, Trash2, Search, Calendar as CalendarIcon, Package, AlertCircle, RefreshCw, Upload, FileText, Download, Phone, X } from 'lucide-react';
 import { addMonths, addYears, format, startOfDay } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn, getNextOccurrence } from '../lib/utils';
@@ -13,6 +14,7 @@ export default function EntreprisesPage() {
   const { entreprises, addEntreprise, updateEntreprise, deleteEntreprise } = useEntreprises();
   const { subscriptions, addSubscription, updateSubscription, deleteSubscription, renewSubscription } = useSubscriptions();
   const { revendeurs } = useRevendeurs();
+  const { pucePlans } = usePucePlans();
   
   const [selectedEntId, setSelectedEntId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -32,11 +34,14 @@ export default function EntreprisesPage() {
 
   const [isSubModalOpen, setIsSubModalOpen] = useState(false);
   const [subEditMode, setSubEditMode] = useState<Subscription | null>(null);
-  const [subForm, setSubForm] = useState<{ quantity: number, type: SubscriptionType, endDate: string }>({
+  const [subForm, setSubForm] = useState<{ quantity: number, type: SubscriptionType, endDate: string, plan: string, phoneNumbers: string[] }>({
     quantity: 1,
     type: 'licence',
-    endDate: format(new Date(), 'yyyy-MM-dd')
+    endDate: format(new Date(), 'yyyy-MM-dd'),
+    plan: '',
+    phoneNumbers: []
   });
+  const [subFormError, setSubFormError] = useState('');
 
   const [isDeleteSubModalOpen, setIsDeleteSubModalOpen] = useState(false);
   const [subToDelete, setSubToDelete] = useState<string | null>(null);
@@ -147,44 +152,74 @@ export default function EntreprisesPage() {
 
   const handleSaveSub = async () => {
     if (!selectedEntreprise) return;
-    if (subEditMode) {
-      await updateSubscription(subEditMode.id, {
-        quantity: subForm.quantity,
-        type: subForm.type,
-        endDate: subForm.endDate
-      });
-    } else {
-      await addSubscription(selectedEntreprise.id, selectedEntreprise.name, subForm.quantity, subForm.type, subForm.endDate);
+
+    const isPuce = subForm.type === 'licence_puce';
+    const cleanedNumbers = isPuce ? subForm.phoneNumbers.map(n => n.trim()).filter(Boolean) : [];
+    if (isPuce) {
+      if (!subForm.plan) {
+        setSubFormError('Le forfait est requis pour une puce');
+        return;
+      }
+      if (cleanedNumbers.length > subForm.quantity) {
+        setSubFormError('Le nombre de numéros dépasse la quantité');
+        return;
+      }
     }
-    closeSubModal();
+    const plan = isPuce ? subForm.plan : null;
+
+    try {
+      if (subEditMode) {
+        await updateSubscription(subEditMode.id, {
+          quantity: subForm.quantity,
+          type: subForm.type,
+          endDate: subForm.endDate,
+          plan,
+          phoneNumbers: cleanedNumbers
+        });
+      } else {
+        await addSubscription(selectedEntreprise.id, selectedEntreprise.name, subForm.quantity, subForm.type, subForm.endDate, plan, cleanedNumbers);
+      }
+      closeSubModal();
+    } catch (error: any) {
+      setSubFormError(error?.message || 'Erreur lors de l\'enregistrement');
+    }
   };
 
   const closeSubModal = () => {
     setIsSubModalOpen(false);
     setSubEditMode(null);
+    setSubFormError('');
     setSubForm({
       quantity: 1,
       type: 'licence',
-      endDate: format(new Date(), 'yyyy-MM-dd')
+      endDate: format(new Date(), 'yyyy-MM-dd'),
+      plan: '',
+      phoneNumbers: []
     });
   };
 
   const openAddSub = () => {
     setSubEditMode(null);
+    setSubFormError('');
     setSubForm({
       quantity: 1,
       type: 'licence',
-      endDate: format(new Date(), 'yyyy-MM-dd')
+      endDate: format(new Date(), 'yyyy-MM-dd'),
+      plan: '',
+      phoneNumbers: []
     });
     setIsSubModalOpen(true);
   };
 
   const openEditSub = (sub: Subscription) => {
     setSubEditMode(sub);
+    setSubFormError('');
     setSubForm({
       quantity: sub.quantity,
       type: sub.type,
-      endDate: sub.endDate
+      endDate: sub.endDate,
+      plan: sub.plan ?? '',
+      phoneNumbers: sub.phoneNumbers ?? []
     });
     setIsSubModalOpen(true);
   };
@@ -306,7 +341,7 @@ export default function EntreprisesPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
       {/* Companies List Panel - Editorial Card */}
-      <div className="lg:col-span-1 editorial-card rounded-xl p-4 md:p-6 flex flex-col h-[60vh] min-h-[400px] lg:h-[calc(100vh-180px)] animate-slide-up delay-100">
+      <div className="lg:col-span-1 editorial-card rounded-xl p-4 md:p-6 flex flex-col h-[60vh] min-h-[400px] lg:h-[calc(100vh-64px)] animate-slide-up delay-100">
         <div className="flex items-center justify-between mb-6 pb-4 border-b border-border">
           <div>
             <h2 className="editorial-heading text-xl text-text-primary flex items-center gap-3">
@@ -410,7 +445,7 @@ export default function EntreprisesPage() {
       </div>
 
       {/* Selected Company Details Panel - Editorial Card */}
-      <div ref={detailPanelRef} className="md:col-span-2 editorial-card rounded-xl p-4 sm:p-8 h-[calc(100vh-180px)] flex flex-col animate-slide-up delay-200 overflow-hidden scroll-mt-4">
+      <div ref={detailPanelRef} className="md:col-span-2 editorial-card rounded-xl p-4 sm:p-8 h-[calc(100vh-64px)] flex flex-col animate-slide-up delay-200 overflow-hidden scroll-mt-4">
         {!selectedEntreprise ? (
           <div className="flex-1 flex flex-col items-center justify-center text-center space-y-4">
             <div className="w-20 h-20 rounded-full bg-surface-hover border-2 border-border flex items-center justify-center">
@@ -580,8 +615,8 @@ export default function EntreprisesPage() {
                            <div className={cn(
                              "w-10 h-10 rounded-lg flex items-center justify-center shadow-editorial-sm shrink-0",
                              sub.type === 'licence'
-                               ? 'bg-[var(--accent-primary)]'
-                               : 'bg-[var(--accent-secondary)]'
+                               ? 'bg-[var(--accent-secondary)]'
+                               : 'bg-[var(--accent-primary)]'
                            )}>
                              <Package className="w-5 h-5 text-white" />
                            </div>
@@ -593,11 +628,22 @@ export default function EntreprisesPage() {
                                 <span className="px-2 py-0.5 rounded-md text-[9px] font-bold font-mono uppercase tracking-widest bg-surface-active text-text-muted">
                                   Qté: {sub.quantity}
                                 </span>
+                                {sub.type === 'licence_puce' && sub.plan && (
+                                  <span className="px-2 py-0.5 rounded-md text-[9px] font-bold font-mono uppercase tracking-widest bg-surface-active text-[var(--accent-primary)]">
+                                    {sub.plan}
+                                  </span>
+                                )}
                              </div>
                              <div className="flex items-center gap-1.5 text-[11px] text-text-muted font-mono">
                                <CalendarIcon className="w-3 h-3" />
                                {format(getNextOccurrence(sub), 'dd/MM/yyyy', { locale: fr })}
                              </div>
+                             {sub.type === 'licence_puce' && (sub.phoneNumbers?.length ?? 0) > 0 && (
+                               <div className="flex items-center gap-1.5 text-[11px] text-text-muted font-mono mt-1">
+                                 <Phone className="w-3 h-3 shrink-0" />
+                                 <span>{sub.phoneNumbers!.length}/{sub.quantity} numéros</span>
+                               </div>
+                             )}
                            </div>
                          </div>
                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-editorial shrink-0">
@@ -852,7 +898,7 @@ export default function EntreprisesPage() {
       {/* Subscription Modal - Editorial Style */}
       {isSubModalOpen && selectedEntreprise && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-          <div className="editorial-card rounded-xl w-full max-w-md p-8 animate-scale-in">
+          <div className="editorial-card rounded-xl w-full max-w-md p-8 animate-scale-in max-h-[90vh] overflow-y-auto custom-scrollbar">
             <h3 className="editorial-heading text-2xl text-text-primary mb-2">
               {subEditMode ? 'Modifier l\'abonnement' : 'Nouvel abonnement'}
             </h3>
@@ -875,6 +921,27 @@ export default function EntreprisesPage() {
                 </select>
               </div>
 
+              {subForm.type === 'licence_puce' && (
+                <div>
+                  <label className="block text-xs text-text-muted font-mono uppercase tracking-wider mb-2">
+                    Forfait *
+                  </label>
+                  <select
+                    value={subForm.plan}
+                    onChange={e => setSubForm(f => ({ ...f, plan: e.target.value }))}
+                    className="w-full bg-background border-2 border-border rounded-lg px-4 py-3 text-sm text-text-primary focus:outline-none focus:border-[var(--accent-primary)] transition-editorial font-mono"
+                  >
+                    <option value="" disabled>Sélectionner un forfait…</option>
+                    {subForm.plan && !pucePlans.some(p => p.name === subForm.plan) && (
+                      <option value={subForm.plan}>{subForm.plan} (supprimé de la liste)</option>
+                    )}
+                    {pucePlans.map(p => (
+                      <option key={p.id} value={p.name}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs text-text-muted font-mono uppercase tracking-wider mb-2">
                   Quantité
@@ -888,6 +955,61 @@ export default function EntreprisesPage() {
                 />
               </div>
 
+              {subForm.type === 'licence_puce' && (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-xs text-text-muted font-mono uppercase tracking-wider">
+                      Numéros de téléphone
+                    </label>
+                    <span className={cn(
+                      "text-xs font-mono",
+                      subForm.phoneNumbers.length > subForm.quantity ? "text-red-400 font-bold" : "text-text-muted"
+                    )}>
+                      {subForm.phoneNumbers.length}/{subForm.quantity}
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="space-y-2 max-h-52 overflow-y-auto custom-scrollbar pr-1">
+                    {subForm.phoneNumbers.map((num, idx) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        <input
+                          type="tel"
+                          value={num}
+                          autoFocus={idx === subForm.phoneNumbers.length - 1 && num === ''}
+                          onChange={e => setSubForm(f => ({
+                            ...f,
+                            phoneNumbers: f.phoneNumbers.map((n, i) => i === idx ? e.target.value : n)
+                          }))}
+                          placeholder="Ex: 21 234 567"
+                          className="flex-1 bg-background border-2 border-border rounded-lg px-4 py-2 text-sm text-text-primary focus:outline-none focus:border-[var(--accent-primary)] transition-editorial font-mono"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setSubForm(f => ({
+                            ...f,
+                            phoneNumbers: f.phoneNumbers.filter((_, i) => i !== idx)
+                          }))}
+                          className="p-2 text-text-muted hover:text-red-400 hover:bg-surface-hover rounded-lg transition-editorial shrink-0"
+                          title="Retirer ce numéro"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSubForm(f => ({ ...f, phoneNumbers: [...f.phoneNumbers, ''] }))}
+                      disabled={subForm.phoneNumbers.length >= subForm.quantity}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2 border-2 border-dashed border-border rounded-lg text-xs font-mono uppercase tracking-wider text-text-muted hover:text-text-primary hover:border-border-strong transition-editorial disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Ajouter un numéro
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs text-text-muted font-mono uppercase tracking-wider mb-2">
                   Date d'abonnement
@@ -900,6 +1022,10 @@ export default function EntreprisesPage() {
                 />
               </div>
             </div>
+
+            {subFormError && (
+              <p className="text-xs font-mono text-red-400 mt-4">{subFormError}</p>
+            )}
 
             <div className="flex gap-3 justify-end mt-8">
               <button

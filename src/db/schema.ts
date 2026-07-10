@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { integer, pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';
+import { integer, jsonb, pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';
 
 // Define the 'users' table.
 export const users = pgTable('users', {
@@ -40,6 +40,13 @@ export const entreprises = pgTable('entreprises', {
   createdAt: timestamp('created_at').defaultNow(),
 });
 
+// Define the 'puce_plans' table: the editable list of SIM-card plans (global config).
+export const pucePlans = pgTable('puce_plans', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull().unique(),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
 // Define the 'subscriptions' table.
 export const subscriptions = pgTable('subscriptions', {
   id: serial('id').primaryKey(),
@@ -53,6 +60,8 @@ export const subscriptions = pgTable('subscriptions', {
   quantity: integer('quantity').notNull(),
   type: text('type').notNull(), // 'licence' | 'licence_puce'
   endDate: text('end_date').notNull(), // YYYY-MM-DD
+  plan: text('plan'), // puce_plans.name — only for 'licence_puce', null otherwise
+  phoneNumbers: jsonb('phone_numbers').$type<string[]>(), // only for 'licence_puce'
   isActive: integer('is_active').default(1).notNull(), // 1 = active, 0 = expired/inactive
   isPaid: integer('is_paid').default(0).notNull(), // 1 = paid, 0 = unpaid
   createdAt: timestamp('created_at').defaultNow(),

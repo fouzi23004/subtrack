@@ -34,17 +34,18 @@ export function useSubscriptions() {
     fetchSubscriptions();
   }, []);
 
-  const addSubscription = async (entrepriseId: string | number, entrepriseName: string, quantity: number, type: string, endDate: string) => {
+  const addSubscription = async (entrepriseId: string | number, entrepriseName: string, quantity: number, type: string, endDate: string, plan?: string | null, phoneNumbers?: string[]) => {
     if (!getCurrentUser()) return;
     try {
-      await api.createSubscription({ entrepriseId: parseInt(entrepriseId.toString()), entrepriseName, quantity, type, endDate });
+      await api.createSubscription({ entrepriseId: parseInt(entrepriseId.toString()), entrepriseName, quantity, type, endDate, plan: plan ?? null, phoneNumbers: phoneNumbers ?? [] });
       await fetchSubscriptions();
     } catch (error) {
       console.error(error);
+      throw error;
     }
   };
 
-  const updateSubscription = async (id: string | number, updates: { entrepriseId?: string | number, entrepriseName?: string, quantity?: number, type?: string, endDate?: string }) => {
+  const updateSubscription = async (id: string | number, updates: { entrepriseId?: string | number, entrepriseName?: string, quantity?: number, type?: string, endDate?: string, plan?: string | null, phoneNumbers?: string[] }) => {
     if (!getCurrentUser()) return;
     try {
       if (updates.entrepriseId) updates.entrepriseId = parseInt(updates.entrepriseId.toString());
@@ -52,6 +53,7 @@ export function useSubscriptions() {
       await fetchSubscriptions();
     } catch (error) {
       console.error(error);
+      throw error;
     }
   };
 

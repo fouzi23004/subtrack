@@ -9,7 +9,7 @@ import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { requireAuth, requireAdmin, AuthRequest } from "./src/middleware/auth";
 import { db } from "./src/db/index";
-import { entreprises, subscriptions, users, revendeurs } from "./src/db/schema";
+import { entreprises, subscriptions, users, revendeurs, pucePlans } from "./src/db/schema";
 import { eq, and } from "drizzle-orm";
 import { generateToken, hashPassword, comparePassword } from "./src/lib/auth";
 import { startEmailNotificationScheduler, sendExpirationNotificationEmail } from "./src/services/email-notification";
@@ -247,7 +247,109 @@ async function startServer() {
     }
   });
 
+  // --- Puce Plans Routes ---
+
+  app.get("/api/puce-plans", async (req: AuthRequest, res) => {
+    try {
+      const results = await db.select().from(pucePlans);
+      res.json(results);
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: "Could not fetch puce plans" });
+    }
+  });
+
+  app.post("/api/puce-plans", async (req: AuthRequest, res) => {
+    try {
+      const name = typeof req.body.name === 'string' ? req.body.name.trim() : '';
+      if (!name) {
+        return res.status(400).json({ error: "Le nom du forfait est requis" });
+      }
+      const result = await db.insert(pucePlans).values({ name }).returning();
+      res.json(result[0]);
+    } catch (e: any) {
+      if (e?.code === '23505') {
+        return res.status(400).json({ error: "Ce forfait existe déjà" });
+      }
+      console.error(e);
+      res.status(500).json({ error: "Could not create puce plan" });
+    }
+  });
+
+  app.put("/api/puce-plans/:id", async (req: AuthRequest, res) => {
+    try {
+      const name = typeof req.body.name === 'string' ? req.body.name.trim() : '';
+      if (!name) {
+        return res.status(400).json({ error: "Le nom du forfait est requis" });
+      }
+      const planId = parseInt(req.params.id);
+      const existing = await db.select().from(pucePlans).where(eq(pucePlans.id, planId)).limit(1);
+      if (existing.length === 0) {
+        return res.status(404).json({ error: "Forfait introuvable" });
+      }
+      const result = await db.update(pucePlans)
+        .set({ name })
+        .where(eq(pucePlans.id, planId))
+        .returning();
+      // Cascade the rename to subscriptions that reference the old name
+      if (existing[0].name !== name) {
+        await db.update(subscriptions)
+          .set({ plan: name })
+          .where(eq(subscriptions.plan, existing[0].name));
+      }
+      res.json(result[0]);
+    } catch (e: any) {
+      if (e?.code === '23505') {
+        return res.status(400).json({ error: "Ce forfait existe déjà" });
+      }
+      console.error(e);
+      res.status(500).json({ error: "Could not update puce plan" });
+    }
+  });
+
+  app.delete("/api/puce-plans/:id", async (req: AuthRequest, res) => {
+    try {
+      // Subscriptions keep their historical plan label; only the list entry is removed
+      await db.delete(pucePlans)
+        .where(eq(pucePlans.id, parseInt(req.params.id)));
+      res.json({ success: true });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: "Could not delete puce plan" });
+    }
+  });
+
   // --- Subscriptions Routes ---
+
+  // For 'licence_puce' subscriptions: plan is required and must exist in puce_plans
+  // (allowedExisting lets an edited subscription keep a plan that was deleted from the list),
+  // and phone numbers are capped by quantity. Other types carry neither field.
+  const normalizePuceFields = async (
+    type: string,
+    plan: unknown,
+    phoneNumbers: unknown,
+    quantity: number,
+    allowedExisting?: string | null
+  ): Promise<{ plan: string | null; phoneNumbers: string[] | null; error?: string }> => {
+    if (type !== 'licence_puce') return { plan: null, phoneNumbers: null };
+    const planName = typeof plan === 'string' ? plan.trim() : '';
+    if (!planName) {
+      return { plan: null, phoneNumbers: null, error: "Le forfait est requis pour une puce" };
+    }
+    if (planName !== allowedExisting) {
+      const found = await db.select().from(pucePlans).where(eq(pucePlans.name, planName)).limit(1);
+      if (found.length === 0) {
+        return { plan: null, phoneNumbers: null, error: "Forfait inconnu" };
+      }
+    }
+    const nums = Array.isArray(phoneNumbers)
+      ? phoneNumbers.map((n) => String(n).trim()).filter(Boolean)
+      : [];
+    if (nums.length > quantity) {
+      return { plan: null, phoneNumbers: null, error: "Le nombre de numéros dépasse la quantité" };
+    }
+    return { plan: planName, phoneNumbers: nums };
+  };
 
   app.get("/api/subscriptions", async (req: AuthRequest, res) => {
     try {
@@ -260,14 +362,20 @@ async function startServer() {
 
   app.post("/api/subscriptions", async (req: AuthRequest, res) => {
     try {
-      const { entrepriseId, entrepriseName, quantity, type, endDate } = req.body;
+      const { entrepriseId, entrepriseName, quantity, type, endDate, plan, phoneNumbers } = req.body;
+      const puceFields = await normalizePuceFields(type, plan, phoneNumbers, quantity);
+      if (puceFields.error) {
+        return res.status(400).json({ error: puceFields.error });
+      }
       const result = await db.insert(subscriptions).values({
         userId: req.user!.userId,
         entrepriseId,
         entrepriseName,
         quantity,
         type,
-        endDate
+        endDate,
+        plan: puceFields.plan,
+        phoneNumbers: puceFields.phoneNumbers
       }).returning();
       res.json(result[0]);
     } catch (e) {
@@ -277,10 +385,19 @@ async function startServer() {
 
   app.put("/api/subscriptions/:id", async (req: AuthRequest, res) => {
     try {
-      const { quantity, type, endDate } = req.body;
+      const { quantity, type, endDate, plan, phoneNumbers } = req.body;
+      const subId = parseInt(req.params.id);
+      const existing = await db.select().from(subscriptions).where(eq(subscriptions.id, subId)).limit(1);
+      if (existing.length === 0) {
+        return res.status(404).json({ error: "Subscription not found" });
+      }
+      const puceFields = await normalizePuceFields(type, plan, phoneNumbers, quantity, existing[0].plan);
+      if (puceFields.error) {
+        return res.status(400).json({ error: puceFields.error });
+      }
       const result = await db.update(subscriptions)
-        .set({ quantity, type, endDate })
-        .where(eq(subscriptions.id, parseInt(req.params.id)))
+        .set({ quantity, type, endDate, plan: puceFields.plan, phoneNumbers: puceFields.phoneNumbers })
+        .where(eq(subscriptions.id, subId))
         .returning();
       res.json(result[0]);
     } catch (e) {
@@ -335,6 +452,8 @@ async function startServer() {
         quantity: finalQuantity,
         type: oldSub.type,
         endDate: newEndDate,
+        plan: oldSub.plan,
+        phoneNumbers: oldSub.phoneNumbers,
         isActive: 1,
         isPaid: 1,
         userId: req.user!.userId

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { Calendar as CalendarIcon, LogOut, Loader2, LayoutDashboard, Building2, Database, Sun, Moon, Users, Shield } from 'lucide-react';
+import { Calendar as CalendarIcon, LogOut, Loader2, LayoutDashboard, Building2, Sun, Moon, Users, Shield, Tag, Menu, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from './lib/utils';
 import { login, signOut, getCurrentUser, User } from './auth';
 import { useSubscriptions } from './hooks/useSubscriptions';
@@ -10,111 +10,194 @@ import CalendarPage from './pages/CalendarPage';
 import EntreprisesPage from './pages/EntreprisesPage';
 import RevendeursPage from './pages/RevendeursPage';
 import UtilisateursPage from './pages/UtilisateursPage';
+import ForfaitsPage from './pages/ForfaitsPage';
 
-function Navigation({ user }: { user: User | null }) {
-  const location = useLocation();
-
-  const navItems = [
+function getNavItems(user: User | null) {
+  return [
     { name: 'Tableau de bord', path: '/', icon: LayoutDashboard },
     { name: 'Calendrier', path: '/calendrier', icon: CalendarIcon },
     { name: 'Entreprises', path: '/entreprises', icon: Building2 },
     { name: 'Revendeurs', path: '/revendeurs', icon: Users },
+    { name: 'Forfaits', path: '/forfaits', icon: Tag },
     ...(user?.role === 'admin' ? [{ name: 'Utilisateurs', path: '/admin/utilisateurs', icon: Shield }] : []),
   ];
+}
+
+function SidebarContent({ user, collapsed, isDark, setIsDark, onSignOut, onNavigate }: {
+  user: User | null,
+  collapsed: boolean,
+  isDark: boolean,
+  setIsDark: (val: boolean) => void,
+  onSignOut: () => void,
+  onNavigate?: () => void
+}) {
+  const location = useLocation();
+  const navItems = getNavItems(user);
 
   return (
-    <>
-      {/* Desktop / tablet nav */}
-      <nav className="hidden md:flex items-center gap-2 bg-surface border border-border rounded-xl p-1.5 shadow-editorial-md">
+    <div className="flex flex-col h-full">
+      {/* Logo & Brand */}
+      <div className={cn(
+        "flex items-center gap-3 border-b border-border py-5",
+        collapsed ? "justify-center px-2" : "px-4"
+      )}>
+        <img src="/logo.png" alt="SubTrack" className="h-10 w-auto object-contain shrink-0" />
+        {!collapsed && (
+          <div className="min-w-0">
+            <h1 className="editorial-heading text-lg text-text-primary leading-tight">
+              SubTrack
+            </h1>
+            <p className="text-[9px] text-text-muted font-mono uppercase tracking-widest mt-0.5 truncate">
+              Gestion d'abonnements
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Nav items */}
+      <nav className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-1.5">
         {navItems.map((item) => (
           <Link
             key={item.path}
             to={item.path}
+            onClick={onNavigate}
+            title={collapsed ? item.name : undefined}
             className={cn(
-              "flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-editorial relative overflow-hidden group",
+              "flex items-center gap-3 py-2.5 rounded-lg text-sm font-medium transition-editorial relative overflow-hidden group",
+              collapsed ? "justify-center px-2" : "px-3",
               location.pathname === item.path
-                ? "bg-[var(--accent-primary)] text-white shadow-editorial-sm"
+                ? "text-white shadow-editorial-sm"
                 : "text-text-muted hover:text-text-primary hover:bg-surface-hover"
             )}
           >
-            <item.icon className="w-4 h-4 relative z-10" />
-            <span className="hidden md:inline font-mono text-xs uppercase tracking-wider relative z-10">
-              {item.name}
-            </span>
             {location.pathname === item.path && (
               <div className="absolute inset-0 bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] opacity-90" />
+            )}
+            <item.icon className="w-4 h-4 relative z-10 shrink-0" />
+            {!collapsed && (
+              <span className="font-mono text-xs uppercase tracking-wider relative z-10 truncate">
+                {item.name}
+              </span>
             )}
           </Link>
         ))}
       </nav>
 
-      {/* Mobile bottom tab bar */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around bg-surface border-t border-border shadow-editorial-lg pb-[env(safe-area-inset-bottom)]">
-        {navItems.map((item) => (
-          <Link
-            key={item.path}
-            to={item.path}
-            className={cn(
-              "flex flex-col items-center justify-center gap-1 flex-1 py-2.5 min-h-[52px] text-xs font-medium transition-editorial relative",
-              location.pathname === item.path
-                ? "text-[var(--accent-primary)]"
-                : "text-text-muted"
-            )}
-          >
-            <item.icon className="w-5 h-5" />
-            <span className="font-mono text-[10px] uppercase tracking-wider">
-              {item.name}
-            </span>
-          </Link>
-        ))}
-      </nav>
-    </>
+      {/* Footer actions */}
+      <div className={cn(
+        "border-t border-border p-3 flex gap-1.5",
+        collapsed ? "flex-col items-center" : "items-center justify-center"
+      )}>
+        <button
+           // eslint-disable-next-line
+          onClick={() => setIsDark(!isDark)}
+          className="p-2.5 text-text-muted hover:text-[var(--accent-primary)] hover:bg-surface-hover rounded-lg transition-editorial border border-transparent hover:border-border"
+          title={isDark ? "Passer en mode clair" : "Passer en mode sombre"}
+        >
+          {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+        </button>
+        <button
+          onClick={onSignOut}
+          className="p-2.5 text-text-muted hover:text-[var(--accent-primary)] hover:bg-surface-hover rounded-lg transition-editorial border border-transparent hover:border-border"
+          title="Se déconnecter"
+        >
+          <LogOut className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
   );
 }
 
 function MainLayout({ children, user, isDark, setIsDark, onSignOut }: { children: React.ReactNode, user: User | null, isDark: boolean, setIsDark: (val: boolean) => void, onSignOut: () => void }) {
   const { subscriptions, loading: subsLoading } = useSubscriptions();
+  const [collapsed, setCollapsed] = useState(() => localStorage.getItem('sidebarCollapsed') === '1');
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  const toggleCollapsed = () => {
+    setCollapsed(c => {
+      localStorage.setItem('sidebarCollapsed', c ? '0' : '1');
+      return !c;
+    });
+  };
 
   return (
-    <div className="min-h-screen editorial-bg text-text-secondary font-sans p-4 pb-24 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
-        <header className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pb-6 border-b-2 border-border">
-          {/* Logo & Brand - Editorial Style */}
-          <div className="flex items-center space-x-4">
-            <img src="/logo.png" alt="SubTrack" className="h-16 w-auto object-contain" />
-            <div>
-              <h1 className="editorial-heading text-2xl text-text-primary leading-tight">
-                SubTrack
-              </h1>
-              <p className="text-xs text-text-muted font-mono uppercase tracking-widest mt-0.5">
-                Gestion d'abonnements
-              </p>
-            </div>
-          </div>
+    <div className="min-h-screen editorial-bg text-text-secondary font-sans flex">
+      {/* Desktop sidebar - fixed so it never moves on scroll */}
+      <aside className={cn(
+        "hidden md:flex flex-col fixed left-0 top-0 h-screen z-30 bg-surface border-r border-border shadow-editorial-md transition-all duration-300",
+        collapsed ? "w-20" : "w-60"
+      )}>
+        <SidebarContent
+          user={user}
+          collapsed={collapsed}
+          isDark={isDark}
+          setIsDark={setIsDark}
+          onSignOut={onSignOut}
+        />
+        {/* Collapse toggle */}
+        <button
+          onClick={toggleCollapsed}
+          className="absolute -right-3 top-16 w-6 h-6 rounded-full bg-surface border border-border shadow-editorial-sm flex items-center justify-center text-text-muted hover:text-[var(--accent-primary)] hover:border-border-strong transition-editorial"
+          title={collapsed ? "Déplier le menu" : "Replier le menu"}
+        >
+          {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
+        </button>
+      </aside>
 
-          {/* Navigation & Actions */}
-          <div className="flex items-center gap-3 flex-wrap">
-            <Navigation user={user} />
-            <div className="w-px h-8 bg-border" />
+      {/* Mobile drawer */}
+      {mobileNavOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in"
+            onClick={() => setMobileNavOpen(false)}
+          />
+          <aside className="absolute left-0 top-0 h-full w-72 max-w-[85vw] bg-surface border-r border-border shadow-editorial-lg animate-slide-in-left flex flex-col">
             <button
-               // eslint-disable-next-line
-              onClick={() => setIsDark(!isDark)}
-              className="p-2.5 text-text-muted hover:text-[var(--accent-primary)] hover:bg-surface-hover rounded-lg transition-editorial border border-transparent hover:border-border"
-              title={isDark ? "Passer en mode clair" : "Passer en mode sombre"}
+              onClick={() => setMobileNavOpen(false)}
+              className="absolute right-3 top-5 p-2 text-text-muted hover:text-text-primary rounded-lg transition-editorial"
+              title="Fermer"
             >
-              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              <X className="w-4 h-4" />
             </button>
-            <button
-              onClick={onSignOut}
-              className="p-2.5 text-text-muted hover:text-[var(--accent-primary)] hover:bg-surface-hover rounded-lg transition-editorial border border-transparent hover:border-border"
-              title="Se déconnecter"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
+            <SidebarContent
+              user={user}
+              collapsed={false}
+              isDark={isDark}
+              setIsDark={setIsDark}
+              onSignOut={onSignOut}
+              onNavigate={() => setMobileNavOpen(false)}
+            />
+          </aside>
+        </div>
+      )}
+
+      {/* Content - offset by the fixed sidebar width on desktop */}
+      <div className={cn(
+        "flex-1 min-w-0 transition-all duration-300",
+        collapsed ? "md:ml-20" : "md:ml-60"
+      )}>
+        {/* Mobile top bar */}
+        <header className="md:hidden sticky top-0 z-40 flex items-center justify-between gap-3 px-4 py-3 bg-surface border-b border-border shadow-editorial-sm">
+          <div className="flex items-center gap-3">
+            <img src="/logo.png" alt="SubTrack" className="h-9 w-auto object-contain" />
+            <h1 className="editorial-heading text-lg text-text-primary leading-tight">
+              SubTrack
+            </h1>
           </div>
+          <button
+            onClick={() => setMobileNavOpen(true)}
+            className="p-2.5 text-text-muted hover:text-text-primary hover:bg-surface-hover rounded-lg transition-editorial"
+            title="Ouvrir le menu"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
         </header>
 
-        {children}
+        <main className="p-4 md:p-8">
+          <div className="max-w-7xl mx-auto space-y-8">
+            {children}
+          </div>
+        </main>
       </div>
     </div>
   );
@@ -280,6 +363,7 @@ function App() {
           <Route path="/calendrier" element={<CalendarPage />} />
           <Route path="/entreprises" element={<EntreprisesPage />} />
           <Route path="/revendeurs" element={<RevendeursPage />} />
+          <Route path="/forfaits" element={<ForfaitsPage />} />
           {user?.role === 'admin' && (
             <Route path="/admin/utilisateurs" element={<UtilisateursPage />} />
           )}
