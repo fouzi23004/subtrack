@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { Calendar as CalendarIcon, LogOut, Loader2, LayoutDashboard, Building2, Sun, Moon, Users, Shield, Tag, Menu, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar as CalendarIcon, LogOut, Loader2, LayoutDashboard, Building2, Sun, Moon, Users, Shield, Tag, Menu, X, ChevronLeft, ChevronRight, PhoneCall } from 'lucide-react';
 import { cn } from './lib/utils';
 import { login, signOut, getCurrentUser, User } from './auth';
 import { useSubscriptions } from './hooks/useSubscriptions';
@@ -11,12 +11,14 @@ import EntreprisesPage from './pages/EntreprisesPage';
 import RevendeursPage from './pages/RevendeursPage';
 import UtilisateursPage from './pages/UtilisateursPage';
 import ForfaitsPage from './pages/ForfaitsPage';
+import RecherchePage from './pages/RecherchePage';
 
 function getNavItems(user: User | null) {
   return [
     { name: 'Tableau de bord', path: '/', icon: LayoutDashboard },
     { name: 'Calendrier', path: '/calendrier', icon: CalendarIcon },
     { name: 'Entreprises', path: '/entreprises', icon: Building2 },
+    { name: 'Recherche N°', path: '/recherche', icon: PhoneCall },
     { name: 'Revendeurs', path: '/revendeurs', icon: Users },
     { name: 'Forfaits', path: '/forfaits', icon: Tag },
     ...(user?.role === 'admin' ? [{ name: 'Utilisateurs', path: '/admin/utilisateurs', icon: Shield }] : []),
@@ -362,6 +364,7 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/calendrier" element={<CalendarPage />} />
           <Route path="/entreprises" element={<EntreprisesPage />} />
+          <Route path="/recherche" element={<RecherchePage />} />
           <Route path="/revendeurs" element={<RevendeursPage />} />
           <Route path="/forfaits" element={<ForfaitsPage />} />
           {user?.role === 'admin' && (

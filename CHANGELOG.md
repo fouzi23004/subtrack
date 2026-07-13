@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-07-13
+
+- New feature: "Recherche N°" page (`/recherche`) — search a puce phone number to find which subscription and which entreprise it belongs to. Matching normalizes to digits only, so spaces, dashes and a leading `+` are ignored and partial numbers work.
+- Results show the matched number(s), the owning entreprise (with contact, matricule fiscale and revendeur) and the abonnement (plan, quantity, expiry, active/paid status), following the existing editorial design system.
+- Added the route and a "Recherche N°" sidebar item (PhoneCall icon) between Entreprises and Revendeurs in `App.tsx`.
+- Typecheck (`npm run lint`) green; feature manually verified in the browser.
+- Bumped version to 0.3.0.
+
 ## 2026-07-10
 
 - New feature: puce plans ("forfaits") — new `puce_plans` table (seeded with simple / gold / 2025), a Forfaits page for CRUD, and a required Forfait select on licence+puce subscriptions. Renaming a plan cascades to existing subscriptions; deleting one keeps the historical label.

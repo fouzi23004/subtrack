@@ -7,6 +7,7 @@ Subscription-tracking app (French UI) for managing licences and licence+puce pro
 - Track subscriptions per entreprise, with revendeur attribution, activation/payment status and expiry dates.
 - Puce plans ("forfaits", e.g. simple / gold / 2025) managed on a dedicated Forfaits page; each licence+puce subscription requires a plan and can list phone numbers (capped at the puce quantity).
 - Calendar view of upcoming expirations, dashboard charts (recharts) and a mini month calendar on the dashboard linking into the calendar views.
+- Phone-number lookup ("Recherche N°"): search a puce phone number (partial, digit-normalized) to instantly find its subscription and the owning entreprise, with revendeur, plan, expiry and payment status.
 - Vertical sidebar navigation (collapsible on desktop, slide-in drawer on mobile).
 - Admin-managed users only — there is no public registration; accounts are created by an admin (see `ADMIN-ACCOUNT.md`).
 - PDF document uploads (RNE / patente) per entreprise, stored under `uploads/`.
